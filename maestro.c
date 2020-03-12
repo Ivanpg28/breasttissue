@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <pvm3.h>
+#include <string.h>
 
 struct Caso
 {
@@ -91,7 +92,7 @@ struct Calculo calcularDest(struct Caso *casos, struct Calculo media) {
 	 return dest;
 }
 
-struct Caso *leerCasos()
+struct Caso *leerCasos(char *path)
 {
 	FILE *fichero = NULL;
 	int dim = 100;
@@ -103,7 +104,7 @@ struct Caso *leerCasos()
         casos[j].id = 0;
     }
 
-	fichero = fopen("BreastTissueTrain.csv", "r");
+	fichero = fopen(path, "r");
 	if (!fichero == NULL)
 	{
 		while (!feof(fichero))
@@ -138,8 +139,12 @@ void mostrarCasos(struct Caso *casos)
 
 main()
 {
+	int cc1, cc2, tid;
+	int tarea = 1; //tarea = 1 suma, tarea = 2 resta
+	int n1, n2, rsdo;
+	char *fichero = "BreastTissueTrain.csv";
 
-	struct Caso *casos = leerCasos();
+	struct Caso *casos = leerCasos(fichero);
 	mostrarCasos(casos);
 
    	struct Calculo media = calcularMedia(casos);
@@ -148,38 +153,27 @@ main()
 	struct Calculo dest = calcularDest(casos, media);
 	printf("\nDesviacion Estandar: %f,%f,%f,%f,%f,%f,%f,%f,%f", dest.i0, dest.pa500, dest.hfs, dest.da, dest.area, dest.ada, dest.max_ip, dest.dr, dest.p);
 
-	free(casos);
    
-
-        
-
-	
-	// int cc1, cc2, tid;
-	// int tarea; //tarea = 1 suma, tarea = 2 resta
-	// int n1, n2, rsdo;
-
-	// printf("Que desea hacer 1-suma, 2-resta: ");
-	// scanf("%d", &tarea);
-	// printf("Introduzca operando 1: ");
-	// scanf("%d", &n1);
-	// printf("Introduzca operando 2: ");
-	// scanf("%d", &n2);
-	// printf("El id del maestro es %x\n", pvm_mytid()); /* enrolar en la PVM */
-	// /* arrancar 1 copia del proceso esclavo en otra maquina */
-	// cc1 = pvm_spawn("esclavo", NULL, 1, "ubuntu-nodo1", 1, &tid);
-	// if (cc1 == 1)
-	// {
-	// 	pvm_initsend(PvmDataDefault); /* inicializar el buffer */
-	// 	pvm_pkint(&n1, 1, 0);		  /* empaquetar datos y enviar al esclavo*/
-	// 	pvm_pkint(&n2, 1, 0);
-	// 	pvm_send(tid, tarea);   /* tarea indica al esclavo si debe sumar o restar */
-	// 	cc2 = pvm_recv(-1, -1); /* recibir el resultado de la operación realizada en el esclavo */
-	// 	pvm_bufinfo(cc2, (int *)0, (int *)0, &tid);
-	// 	pvm_upkint(&rsdo, 1, 0);
-	// 	printf("El resultado de la operación es: %d\n", rsdo);
-	// }
-	// else
-	// 	printf("No se pudo iniciar el proceso esclavo\n");
-	// pvm_exit();
-	// exit(0);
+	printf("El id del maestro es %x\n", pvm_mytid()); /* enrolar en la PVM */
+	/* arrancar 1 copia del proceso esclavo en otra maquina */
+	cc1 = pvm_spawn("esclavo", NULL, 1, "ubuntu-nodo-1", 1, &tid);
+	if (cc1 == 1)
+	{
+		pvm_initsend(PvmDataDefault); /* inicializar el buffer */
+		char tmp[sizeof(media)];
+    	memcpy(tmp, &media, sizeof(media));
+		pvm_pkstr(fichero);
+		pvm_pkbyte(tmp, 1, 0);		  /* empaquetar datos y enviar al esclavo*/
+		//pvm_pkint(&n2, 1, 0);
+		pvm_send(tid, tarea);   /* tarea indica al esclavo si debe sumar o restar */
+		cc2 = pvm_recv(-1, -1); /* recibir el resultado de la operación realizada en el esclavo */
+		pvm_bufinfo(cc2, (int *)0, (int *)0, &tid);
+		pvm_upkint(&rsdo, 1, 0);
+		printf("El resultado de la operación es: %d\n", rsdo);
+	}
+	else
+		printf("No se pudo iniciar el proceso esclavo\n");
+	pvm_exit();
+	free(casos);
+	exit(0);
 }
