@@ -127,7 +127,6 @@ struct Caso *leerCasos(char *path)
 
 void mostrarCasos(struct Caso *casos)
 {
-    char ch;
     int i = 0;
     while (casos[i].id != 0)
     {
@@ -160,10 +159,13 @@ main()
 	if (cc1 == 1)
 	{
 		pvm_initsend(PvmDataDefault); /* inicializar el buffer */
-		char tmp[sizeof(media)];
-    	memcpy(tmp, &media, sizeof(media));
+		char media_ser[sizeof(media)];
+    	memcpy(media_ser, &media, sizeof(media));
+		char dest_ser[sizeof(dest)];
+    	memcpy(dest_ser, &dest, sizeof(dest));
 		pvm_pkstr(fichero);
-		pvm_pkbyte(tmp, 1, 0);		  /* empaquetar datos y enviar al esclavo*/
+		pvm_pkbyte(media_ser, 1, 0);		  /* empaquetar datos y enviar al esclavo*/
+		pvm_pkbyte(dest_ser, 1, 0);		  /* empaquetar datos y enviar al esclavo*/
 		//pvm_pkint(&n2, 1, 0);
 		pvm_send(tid, tarea);   /* tarea indica al esclavo si debe sumar o restar */
 		cc2 = pvm_recv(-1, -1); /* recibir el resultado de la operación realizada en el esclavo */
