@@ -3,6 +3,7 @@
 #include <pvm3.h>
 #include <string.h>
 
+//struct que guarda cada uno de los casos
 struct Caso
 {
 	short id;
@@ -17,7 +18,7 @@ struct Caso
 	double dr;
 	double p;
 };
-
+//struct que guarda la media o la desviacion estandar
 struct Calculo
 {
 	double i0;
@@ -30,7 +31,7 @@ struct Calculo
 	double dr;
 	double p;
 };
-
+//funcion para poder debuggear la ejecucion del esclavo
 void logger(char *texto)
 {
 	FILE *fichero = NULL;
@@ -39,6 +40,7 @@ void logger(char *texto)
 	fclose(fichero);
 }
 
+// funcion que lee los casos de un fichero dado
 struct Caso *leerCasos(char *path)
 {
 	logger("entra leer");
@@ -73,8 +75,10 @@ struct Caso *leerCasos(char *path)
 	return casos;
 }
 
+//funcion para nomalizar cada caso dado
 struct Caso normalizarCaso(struct Caso caso, struct Calculo media, struct Calculo dest)
 {
+	//(caso - media) / desviacion
 	caso.i0 = (caso.i0 - media.i0) / dest.i0;
 	caso.pa500 = (caso.pa500 - media.pa500) / dest.pa500;
 	caso.hfs = (caso.hfs - media.hfs) / dest.hfs;
@@ -88,6 +92,7 @@ struct Caso normalizarCaso(struct Caso caso, struct Calculo media, struct Calcul
 	return caso;
 }
 
+//funcion que itera por el array de structs y llama a la funcion normalizarCaso con cada uno
 struct Caso *normalizarCasos(struct Caso *casos, struct Calculo media, struct Calculo dest)
 {
 	int i = 0;
@@ -101,6 +106,7 @@ struct Caso *normalizarCasos(struct Caso *casos, struct Calculo media, struct Ca
 	return casos;
 }
 
+//funcion para escribir los casos en un fichero dado
 void escribirCasos(struct Caso *casos, char *path)
 {
 	logger(path);
@@ -116,6 +122,7 @@ void escribirCasos(struct Caso *casos, char *path)
 	fclose(fichero);
 }
 
+//funcion que concatena 2 strings
 char *concat(char *str1, char *str2)
 {
 
@@ -136,6 +143,7 @@ char *concat(char *str1, char *str2)
 	return str1;
 }
 
+//funcion que añade la letra N al final del fichero enviado por el maestro
 char *generarFicheroDestino(char *fichero)
 {
 	int i = 0;
@@ -175,18 +183,18 @@ main()
 	logger("conecta padre");
 	int bufid = pvm_recv(ptid, -1);
 	pvm_bufinfo(bufid, &nbytes, &msgtag, &tid); //msgtag será 1 o 2 dependiendo de lo que envíe el maestro
-	pvm_upkstr(fichero);
-	logger("desempaqueta fichero");
-	pvm_upkbyte(media_ser, sizeof(media), 1);
-	logger("desempaqueta media");
-	memcpy(&media, media_ser, sizeof(media));
-	pvm_upkbyte(dest_ser, sizeof(dest), 1);
-	logger("desempaqueta dest");
-	memcpy(&dest, dest_ser, sizeof(dest));
-	fichero_origen = concat(path, fichero);
-	fichero_destino = generarFicheroDestino(fichero_origen);
 	if (msgtag == 1)
 	{
+		pvm_upkstr(fichero);
+		logger("desempaqueta fichero");
+		pvm_upkbyte(media_ser, sizeof(media), 1);
+		logger("desempaqueta media");
+		memcpy(&media, media_ser, sizeof(media));
+		pvm_upkbyte(dest_ser, sizeof(dest), 1);
+		logger("desempaqueta dest");
+		memcpy(&dest, dest_ser, sizeof(dest));
+		fichero_origen = concat(path, fichero);
+		fichero_destino = generarFicheroDestino(fichero_origen);
 		casos = leerCasos(fichero_origen);
 		logger("sale leer");
 		casos_normalizados = normalizarCasos(casos, media, dest);

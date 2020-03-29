@@ -3,7 +3,7 @@
 #include <math.h>
 #include <pvm3.h>
 #include <string.h>
-
+//struct que guarda cada uno de los casos
 struct Caso
 {
 	short id;
@@ -18,7 +18,7 @@ struct Caso
 	double dr;
 	double p;
 };
-
+//struct que guarda la media o la desviacion estandar
 struct Calculo
 {
 	double i0;
@@ -49,6 +49,7 @@ struct Calculo calcularMedia(struct Caso *casos)
 	int i = 0;
 	while (casos[i].id != 0)
 	{
+		//Sumamos cada caso
 		media.i0 += casos[i].i0;
 		media.pa500 += casos[i].pa500;
 		media.hfs += casos[i].hfs;
@@ -60,6 +61,7 @@ struct Calculo calcularMedia(struct Caso *casos)
 		media.p += casos[i].p;
 		i++;
 	}
+	//dividimos por el numero de casos
 	media.i0 /= i;
 	media.pa500 /= i;
 	media.hfs /= i;
@@ -90,6 +92,7 @@ struct Calculo calcularDest(struct Caso *casos, struct Calculo media)
 
 	while (casos[i].id != 0)
 	{
+		//hacemos (caso - media)̂ 2
 		dest.i0 += pow(casos[i].i0 - media.i0, 2);
 		dest.pa500 += pow(casos[i].pa500 - media.pa500, 2);
 		dest.hfs += pow(casos[i].hfs - media.hfs, 2);
@@ -101,7 +104,7 @@ struct Calculo calcularDest(struct Caso *casos, struct Calculo media)
 		dest.p += pow(casos[i].p - media.p, 2);
 		i++;
 	}
-
+	// hacemos raiz de lo anterior dividido entre el numero de casos - 1
 	dest.i0 = sqrt(dest.i0 / (i - 1));
 	dest.pa500 = sqrt(dest.pa500 / (i - 1));
 	dest.hfs = sqrt(dest.hfs / (i - 1));
@@ -115,6 +118,7 @@ struct Calculo calcularDest(struct Caso *casos, struct Calculo media)
 	return dest;
 }
 
+// funcion que lee los casos de un fichero dado
 struct Caso *leerCasos(char *path)
 {
 	FILE *fichero = NULL;
@@ -132,7 +136,7 @@ struct Caso *leerCasos(char *path)
 	{
 		while (!feof(fichero))
 		{
-			//%[^|] es una expresion regular para cualquier valor excepto la tuberia |
+			//%[^,] es una expresion regular para cualquier valor excepto la coma ,
 			fscanf(fichero, "%hd,%[^,],%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf", &casos[i].id, casos[i].class, &casos[i].i0, &casos[i].pa500, &casos[i].hfs, &casos[i].da, &casos[i].area, &casos[i].ada, &casos[i].max_ip, &casos[i].dr, &casos[i].p);
 			i++;
 			if (i == dim - 1)
@@ -148,6 +152,7 @@ struct Caso *leerCasos(char *path)
 	return casos;
 }
 
+//funcion que muestra los casos almacenados en un array de structs caso
 void mostrarCasos(struct Caso *casos)
 {
 	int i = 0;
@@ -161,13 +166,13 @@ void mostrarCasos(struct Caso *casos)
 
 main()
 {
-	int cc1, cc2, tid;
+	int cc1, cc2, cc3, cc4, tid;
 	int tarea = 1;
 	int n1, n2, rsdo_train, rsdo_test;
 	char fichero_train[50] = "BreastTissueTrain.csv";
-	char fichero_test[50] = "BreastTissueTrain.csv";
+	char fichero_test[50] = "BreastTissueTest.csv";
 
-	struct Caso *casos = leerCasos(fichero);
+	struct Caso *casos = leerCasos(fichero_train);
 	mostrarCasos(casos);
 
 	struct Calculo media = calcularMedia(casos);
@@ -176,26 +181,27 @@ main()
 	struct Calculo dest = calcularDest(casos, media);
 	printf("\nDesviacion Estandar: %lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf", dest.i0, dest.pa500, dest.hfs, dest.da, dest.area, dest.ada, dest.max_ip, dest.dr, dest.p);
 
+	//serializamos media y desviacion para poder enviarlas al esclavo
 	char media_ser[sizeof(media)];
 	char dest_ser[sizeof(dest)];
 	memcpy(media_ser, &media, sizeof(media));
 	memcpy(dest_ser, &dest, sizeof(dest));
 
 	printf("El id del maestro es %x\n", pvm_mytid()); /* enrolar en la PVM */
-	/* arrancar 1 copia del proceso esclavo en otra maquina */
+	/* arrancar 1 copia del proceso esclavo en la misma maquina */
 	cc1 = pvm_spawn("esclavo", NULL, 1, "ubuntu-nodo1", 1, &tid);
 	if (cc1 == 1)
 	{
 		pvm_initsend(PvmDataDefault); /* inicializar el buffer */
 
-		pvm_pkstr(fichero_train);
-		pvm_pkbyte(media_ser, sizeof(media_ser), 1);
-		pvm_pkbyte(dest_ser, sizeof(dest_ser), 1);
-		pvm_send(tid, tarea);   /* tarea indica al esclavo si debe sumar o restar */
+		pvm_pkstr(fichero_train);//envio del fichero
+		pvm_pkbyte(media_ser, sizeof(media_ser), 1);//envio de la media
+		pvm_pkbyte(dest_ser, sizeof(dest_ser), 1);//envio de la desviacion
+		pvm_send(tid, tarea);   /* tarea indica al esclavo si tiene que normalizar o calcular distancias */
 		cc2 = pvm_recv(-1, -1); /* recibir el resultado de la operación realizada en el esclavo */
 		pvm_bufinfo(cc2, (int *)0, (int *)0, &tid);
 		pvm_upkint(&rsdo_train, 1, 0);
-		printf("El resultado de la operación es: %d\n", rsdo_train);
+		printf("Nomalizacion de casos fichero train: %d\n", rsdo_train);// 1 correcto
 	}
 	else
 		printf("No se pudo iniciar el proceso esclavo\n");
@@ -204,14 +210,14 @@ main()
 	if (cc3 == 1)
 	{
 		pvm_initsend(PvmDataDefault); /* inicializar el buffer */
-		pvm_pkstr(fichero_test);
-		pvm_pkbyte(media_ser, sizeof(media_ser), 1);
-		pvm_pkbyte(dest_ser, sizeof(dest_ser), 1);
-		pvm_send(tid, tarea);   /* tarea indica al esclavo si debe sumar o restar */
+		pvm_pkstr(fichero_test); //envio del fichero
+		pvm_pkbyte(media_ser, sizeof(media_ser), 1); //envio de la media
+		pvm_pkbyte(dest_ser, sizeof(dest_ser), 1);  //envio de la desviacion
+		pvm_send(tid, tarea);	/* tarea indica al esclavo si tiene que normalizar o calcular distancias */
 		cc4 = pvm_recv(-1, -1); /* recibir el resultado de la operación realizada en el esclavo */
 		pvm_bufinfo(cc4, (int *)0, (int *)0, &tid);
 		pvm_upkint(&rsdo_test, 1, 0);
-		printf("El resultado de la operación es: %d\n", rsdo_test);
+		printf("Nomalizacion de casos fichero test: %d\n", rsdo_test); // 1 correcto
 	}
 	else
 		printf("No se pudo iniciar el proceso esclavo\n");
