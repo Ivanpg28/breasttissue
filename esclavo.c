@@ -7,28 +7,28 @@ struct Caso
 {
 	short id;
 	char class[3];
-	float i0;
-	float pa500;
-	float hfs;
-	float da;
-	float area;
-	float ada;
-	float max_ip;
-	float dr;
-	float p;
+	double i0;
+	double pa500;
+	double hfs;
+	double da;
+	double area;
+	double ada;
+	double max_ip;
+	double dr;
+	double p;
 };
 
 struct Calculo
 {
-	float i0;
-	float pa500;
-	float hfs;
-	float da;
-	float area;
-	float ada;
-	float max_ip;
-	float dr;
-	float p;
+	double i0;
+	double pa500;
+	double hfs;
+	double da;
+	double area;
+	double ada;
+	double max_ip;
+	double dr;
+	double p;
 };
 
 void logger(char *texto)
@@ -58,7 +58,7 @@ struct Caso *leerCasos(char *path)
 		while (!feof(fichero))
 		{
 			//%[^|] es una expresion regular para cualquier valor excepto la tuberia |
-			fscanf(fichero, "%hd,%[^,],%f,%f,%f,%f,%f,%f,%f,%f,%f", &casos[i].id, casos[i].class, &casos[i].i0, &casos[i].pa500, &casos[i].hfs, &casos[i].da, &casos[i].area, &casos[i].ada, &casos[i].max_ip, &casos[i].dr, &casos[i].p);
+			fscanf(fichero, "%hd,%[^,],%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf", &casos[i].id, casos[i].class, &casos[i].i0, &casos[i].pa500, &casos[i].hfs, &casos[i].da, &casos[i].area, &casos[i].ada, &casos[i].max_ip, &casos[i].dr, &casos[i].p);
 			i++;
 			if (i == dim - 1)
 			{
@@ -103,16 +103,57 @@ struct Caso *normalizarCasos(struct Caso *casos, struct Calculo media, struct Ca
 
 void escribirCasos(struct Caso *casos, char *path)
 {
+	logger(path);
 	FILE *fichero = NULL;
 	int i = 0;
 	fichero = fopen(path, "w");
 
 	while (casos[i].id != 0)
 	{
-		fprintf(fichero, "\n%d,%s,%f,%f,%f,%f,%f,%f,%f,%f,%f", casos[i].id, casos[i].class, casos[i].i0, casos[i].pa500, casos[i].hfs, casos[i].da, casos[i].area, casos[i].ada, casos[i].max_ip, casos[i].dr, casos[i].p);
+		fprintf(fichero, "\n%d,%s,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf", casos[i].id, casos[i].class, casos[i].i0, casos[i].pa500, casos[i].hfs, casos[i].da, casos[i].area, casos[i].ada, casos[i].max_ip, casos[i].dr, casos[i].p);
 		i++;
 	}
 	fclose(fichero);
+}
+
+char *concat(char *str1, char *str2)
+{
+
+	int i = 0;
+	int j = 0;
+	while (str1[i] != '\0')
+	{
+		i++;
+	}
+
+	while (str2[j] != '\0')
+	{
+		str1[i] = str2[j];
+		i++;
+		j++;
+	}
+	str1[i] = '\0';
+	return str1;
+}
+
+char *generarFicheroDestino(char *fichero)
+{
+	int i = 0;
+	int j = 0;
+	char *fichero_destino = malloc(50);
+	while (fichero[i] != '\0')
+	{
+		if (fichero[i] == '.')
+		{
+			fichero_destino[j] = 'N';
+			j++;
+		}
+		fichero_destino[j] = fichero[i];
+		i++;
+		j++;
+	}
+	fichero_destino[j] = '\0';
+	return fichero_destino;
 }
 
 main()
@@ -126,8 +167,9 @@ main()
 	struct Caso *casos_normalizados;
 	char path[50] = "pvm3/bin/LINUX/";
 	char fichero[50];
-	char fichero_destino[50] = "pvm3/bin/LINUX/BreastTissueTrainN.csv";
-	char b[sizeof(media)], c[sizeof(dest)];
+	char *fichero_origen;
+	char *fichero_destino;
+	char media_ser[sizeof(media)] = "", dest_ser[sizeof(dest)] = "";
 
 	ptid = pvm_parent();
 	logger("conecta padre");
@@ -135,26 +177,28 @@ main()
 	pvm_bufinfo(bufid, &nbytes, &msgtag, &tid); //msgtag será 1 o 2 dependiendo de lo que envíe el maestro
 	pvm_upkstr(fichero);
 	logger("desempaqueta fichero");
-	pvm_upkbyte(b, sizeof(media), 0);
+	pvm_upkbyte(media_ser, sizeof(media), 1);
 	logger("desempaqueta media");
-	memcpy(&media, b, sizeof(media));
-	pvm_upkbyte(c, sizeof(dest), 0);
+	memcpy(&media, media_ser, sizeof(media));
+	pvm_upkbyte(dest_ser, sizeof(dest), 1);
 	logger("desempaqueta dest");
-	memcpy(&dest, c, sizeof(dest));
-
+	memcpy(&dest, dest_ser, sizeof(dest));
+	fichero_origen = concat(path, fichero);
+	fichero_destino = generarFicheroDestino(fichero_origen);
 	if (msgtag == 1)
 	{
-		casos = leerCasos("pvm3/bin/LINUX/BreastTissueTrain.csv");
+		casos = leerCasos(fichero_origen);
 		logger("sale leer");
 		casos_normalizados = normalizarCasos(casos, media, dest);
 		logger("normaliza datos");
-		escribirCasos(casos, fichero_destino);
+		escribirCasos(casos_normalizados, fichero_destino);
 		logger("escribe datos");
 	}
 	else if (msgtag == 2)
 	{
 		//Parte 2
 	}
+
 	pvm_initsend(PvmDataDefault); /* inicializar el buffer */
 	pvm_pkint(&rsdo, 1, 0);		  /* empaqueta el resultado y lo envía al padre*/
 	pvm_send(ptid, 0);
