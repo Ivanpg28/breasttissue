@@ -166,9 +166,9 @@ void mostrarCasos(struct Caso *casos)
 
 main()
 {
-	int cc1, cc2, cc3, cc4, tid;
+	int cc1, cc2, cc3, cc4, cc5, cc6, cc7, cc8, tid;
 	int tarea = 1;
-	int n1, n2, rsdo_train, rsdo_test;
+	int n1, n2, rsdo_train, rsdo_test, rsdo_c20, rsdo_c27;
 	char fichero_train[50] = "BreastTissueTrain.csv";
 	char fichero_test[50] = "BreastTissueTest.csv";
 
@@ -221,6 +221,33 @@ main()
 	}
 	else
 		printf("No se pudo iniciar el proceso esclavo\n");
+
+	tarea = 2;
+	cc5 = pvm_spawn("esclavo", NULL, 1, "ubuntu-nodo1", 1, &tid);
+	if (cc5 == 1)
+	{
+		pvm_initsend(PvmDataDefault); /* inicializar el buffer */
+		pvm_send(tid, tarea); //tarea indica al esclavo si debe hacer el caso 20 o 27
+		cc6 = pvm_recv(-1, -1); //recibe el resultado de la operación realizada en el esclavo
+		pvm_bufinfo(cc6, (int *)0, (int *)0, &tid);
+		pvm_upkint(&rsdo_c20, 1, 0);
+		printf("Fichero caso 20 creado: %d\n", rsdo_c20); //1 correcto
+	}
+	else
+		printf("No se pudo iniciar el proceso esclavo\n");
+
+	tarea = 3;
+	cc7 = pvm_spawn("esclavo", NULL, 1, "ubuntu-nodo2", 1, &tid);
+	if (cc7 == 1){
+		pvm_initsend(PvmDataDefault); /* inicializar el buffer */
+		pvm_send(tid, tarea); /* tarea indica al esclavo si debe hacer el caso 20 o 27 */
+		cc8 = pvm_recv(-1, -1); //recibe el resultado de la operación realizada en el esclavo
+		pvm_bufinfo(cc8, (int *)0, (int *)0, &tid);
+		pvm_upkint(&rsdo_c27, 1, 0);
+		printf("Fichero caso 27 creado: %d\n", rsdo_c27); //1 correcto
+	}else
+		printf("No se pudo iniciar el proceso esclavo\n");
+	
 	pvm_exit();
 	free(casos);
 	exit(0);

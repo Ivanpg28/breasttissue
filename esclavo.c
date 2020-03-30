@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <pvm3.h>
 #include <string.h>
+#include <dirent.h>
+#include <math.h>
 
 //struct que guarda cada uno de los casos
 struct Caso
@@ -30,6 +32,22 @@ struct Calculo
 	double max_ip;
 	double dr;
 	double p;
+};
+//struct que guarda los casos para los ficheros case 20 y 27
+struct Dato{
+	char Case[100];
+	char Class[100];
+	char Io[100];
+	char Pa500[100];
+	char Hfs[100];
+	char Da[100];
+	char Area[100];
+	char Ada[100];
+	char MaxIp[100];
+	char Dr[100];
+	char P[100];
+	float Distancia;
+    
 };
 //funcion para poder debuggear la ejecucion del esclavo
 void logger(char *texto)
@@ -116,7 +134,7 @@ void escribirCasos(struct Caso *casos, char *path)
 
 	while (casos[i].id != 0)
 	{
-		fprintf(fichero, "\n%d,%s,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf", casos[i].id, casos[i].class, casos[i].i0, casos[i].pa500, casos[i].hfs, casos[i].da, casos[i].area, casos[i].ada, casos[i].max_ip, casos[i].dr, casos[i].p);
+		fprintf(fichero, "%d,%s,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf\n", casos[i].id, casos[i].class, casos[i].i0, casos[i].pa500, casos[i].hfs, casos[i].da, casos[i].area, casos[i].ada, casos[i].max_ip, casos[i].dr, casos[i].p);
 		i++;
 	}
 	fclose(fichero);
@@ -173,6 +191,8 @@ main()
 	struct Calculo dest;
 	struct Caso *casos;
 	struct Caso *casos_normalizados;
+	struct Dato datos;
+	struct Dato dato[1000];
 	char path[50] = "pvm3/bin/LINUX/";
 	char fichero[50];
 	char *fichero_origen;
@@ -204,7 +224,318 @@ main()
 	}
 	else if (msgtag == 2)
 	{
-		//Parte 2
+		//leemos el fichero TestN
+		FILE *fp;
+		fp = fopen("pvm3/bin/LINUX/BreastTissueTestN.csv","r");
+		char cadena[1000];
+		char *token;
+		int cont =0;
+        //guardamos los datos del ficehro en variables
+		if(fp){
+		    while(fgets(cadena,1000,fp)!= NULL){
+		        if(cont == 0){
+		            strcpy(datos.Case, strtok(cadena, ","));
+		            strcpy(datos.Class, strtok(NULL, ","));
+		            strcpy(datos.Io, strtok(NULL, ","));
+		            strcpy(datos.Pa500, strtok(NULL, ","));
+		            strcpy(datos.Hfs, strtok(NULL, ","));
+		            strcpy(datos.Da, strtok(NULL, ","));
+		            strcpy(datos.Area, strtok(NULL, ","));
+		            strcpy(datos.Ada, strtok(NULL, ","));
+		            strcpy(datos.MaxIp, strtok(NULL, ","));
+		            strcpy(datos.Dr, strtok(NULL, ","));
+		            strcpy(datos.P, strtok(NULL, ","));
+		        }
+		        cont ++;
+		    }
+		}
+		
+		fclose(fp);
+		
+		//leemos el fichero TrainN
+		FILE *f;
+		f = fopen("pvm3/bin/LINUX/BreastTissueTrainN.csv", "r");
+		char linea[1000];
+		int i;
+        //guardamos los datos del fichero en variables
+		if(f){
+		    
+		    for(i=0;i<9;i++){
+		        fgets(linea,1000,f);
+
+		        strcpy(dato[i].Case, strtok(linea, ","));
+		        strcpy(dato[i].Class, strtok(NULL, ","));
+		        strcpy(dato[i].Io, strtok(NULL, ","));
+		        strcpy(dato[i].Pa500, strtok(NULL, ","));
+		        strcpy(dato[i].Hfs, strtok(NULL, ","));
+		        strcpy(dato[i].Da, strtok(NULL, ","));
+		        strcpy(dato[i].Area, strtok(NULL, ","));
+		        strcpy(dato[i].Ada, strtok(NULL, ","));
+		        strcpy(dato[i].MaxIp, strtok(NULL, ","));
+		        strcpy(dato[i].Dr, strtok(NULL, ","));
+		        strcpy(dato[i].P, strtok(NULL, ","));
+		        
+		        }    
+		    }
+		fclose(f);
+        
+        
+        
+        
+		//datos del fichero 1 convertidos a float para las operaciones
+		float convert[9];
+		sscanf(datos.Io, "%f", &convert[0]);
+		sscanf(datos.Pa500, "%f", &convert[1]);
+		sscanf(datos.Hfs, "%f", &convert[2]);
+		sscanf(datos.Da, "%f", &convert[3]);
+		sscanf(datos.Area, "%f", &convert[4]);
+		sscanf(datos.Ada, "%f", &convert[5]);
+		sscanf(datos.MaxIp, "%f", &convert[6]);
+		sscanf(datos.Dr, "%f", &convert[7]);
+		sscanf(datos.P, "%f", &convert[8]);
+        
+		//datos del fichero 2 convertidos a float para las operaciones
+		int j=0;
+		float convert2[81];
+		i=0;
+		do{
+		    
+		    sscanf(dato[i].Io, "%f", &convert2[j]);
+		    j++;
+		    sscanf(dato[i].Pa500, "%f", &convert2[j]);
+		    j++;
+		    sscanf(dato[i].Hfs, "%f", &convert2[j]);
+		    j++;
+		    sscanf(dato[i].Da, "%f", &convert2[j]);
+		    j++;
+		    sscanf(dato[i].Area, "%f", &convert2[j]);
+		    j++;
+		    sscanf(dato[i].Ada, "%f", &convert2[j]);
+		    j++;
+		    sscanf(dato[i].MaxIp, "%f", &convert2[j]);
+		    j++;
+		    sscanf(dato[i].Dr, "%f", &convert2[j]);
+		    j++;
+		    sscanf(dato[i].P, "%f", &convert2[j]);
+		    i++;
+		    j++;
+		    
+		    
+		}while(j!=81);
+        
+		//variables para las operaciones
+		float potencia=2;
+		
+		int x=0;
+		int y =0;
+		
+		float Io[10];
+		float Pa500[10];
+		float Hfs[10];
+		float Da[10];
+		float Area[10];
+		float Ada[10];
+		float MaxIp[10];
+		float Dr[10];
+		float P[10];
+		
+		do{
+			Io[x] = pow(convert2[y] - convert[0],potencia);
+			y++;
+			Pa500[x] = pow(convert2[y] - convert[1],potencia);
+			y++;
+			Hfs[x] = pow(convert2[y] - convert[2],potencia);
+			y++;
+			Da[x] = pow(convert2[y] - convert[3],potencia);
+			y++;
+			Area[x] = pow(convert2[y] - convert[4],potencia);
+			y++;
+			Ada[x] = pow(convert2[y] - convert[5],potencia);
+			y++;
+			MaxIp[x] = pow(convert2[y] - convert[6],potencia);
+			y++;
+			Dr[x] = pow(convert2[y] - convert[7],potencia);
+			y++;
+			P[x] = pow(convert2[y] - convert[8],potencia);
+			y++;
+			x++;
+		
+		}while(x<9);
+
+        //calculamos las distancias
+		float distancia[9];
+		int z;
+		for(z=0;z<9;z++){
+			distancia[z] = sqrt(Io[z]+Pa500[z]+Hfs[z]+Da[z]+Area[z]+Ada[z]+MaxIp[z]+Dr[z]+P[z]);
+		
+		}
+        
+		//creamos el fichero con las distancias
+		FILE *fw;
+		fw = fopen("pvm3/bin/LINUX/Case20.csv", "w");
+		int a;
+		for(a=0;a<9;a++){
+		    fprintf(fw, "%s,%s,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", datos.Case,datos.Class,Io[a],Pa500[a],Hfs[a],Da[a],Area[a],Ada[a],MaxIp[a],Dr[a],P[a],distancia[a]);
+		
+		}
+		
+		fclose(fw);
+	}
+	else if(msgtag==3){
+		//leemos el fichero TestN
+		FILE *fp;
+		fp = fopen("pvm3/bin/LINUX/BreastTissueTestN.csv","r");
+		char cadena[1000];
+		char *token;
+		int cont =0;
+		//guardamos los datos en variables
+		if(fp){
+		    while(fgets(cadena,1000,fp)!= NULL){
+				//como contador es 1 leemos la segunda linea del fichero
+		        if(cont==1){
+		            strcpy(datos.Case, strtok(cadena, ","));
+		            strcpy(datos.Class, strtok(NULL, ","));
+		            strcpy(datos.Io, strtok(NULL, ","));
+		            strcpy(datos.Pa500, strtok(NULL, ","));
+		            strcpy(datos.Hfs, strtok(NULL, ","));
+		            strcpy(datos.Da, strtok(NULL, ","));
+		            strcpy(datos.Area, strtok(NULL, ","));
+		            strcpy(datos.Ada, strtok(NULL, ","));
+		            strcpy(datos.MaxIp, strtok(NULL, ","));
+		            strcpy(datos.Dr, strtok(NULL, ","));
+		            strcpy(datos.P, strtok(NULL, ","));
+		        }
+		        cont++;
+		    }
+
+		}
+		fclose(fp);
+
+		//leemos el fichero TrainN
+		FILE *f;
+		f = fopen("pvm3/bin/LINUX/BreastTissueTrainN.csv", "r");
+		char linea[1000];
+		int i;
+		//guardamos los datos en variables
+		if(f){
+		    
+		    for(i=0;i<9;i++){
+		        fgets(linea,1000,f);
+
+		        strcpy(dato[i].Case, strtok(linea, ","));
+		        strcpy(dato[i].Class, strtok(NULL, ","));
+		        strcpy(dato[i].Io, strtok(NULL, ","));
+		        strcpy(dato[i].Pa500, strtok(NULL, ","));
+		        strcpy(dato[i].Hfs, strtok(NULL, ","));
+		        strcpy(dato[i].Da, strtok(NULL, ","));
+		        strcpy(dato[i].Area, strtok(NULL, ","));
+		        strcpy(dato[i].Ada, strtok(NULL, ","));
+		        strcpy(dato[i].MaxIp, strtok(NULL, ","));
+		        strcpy(dato[i].Dr, strtok(NULL, ","));
+		        strcpy(dato[i].P, strtok(NULL, ","));
+		        
+		        }
+		            
+		    }
+		fclose(f);
+
+		//datos del fichero 1 convertidos a float para las operaciones
+		float convert[9];
+		sscanf(datos.Io, "%f", &convert[0]);
+		sscanf(datos.Pa500, "%f", &convert[1]);
+		sscanf(datos.Hfs, "%f", &convert[2]);
+		sscanf(datos.Da, "%f", &convert[3]);
+		sscanf(datos.Area, "%f", &convert[4]);
+		sscanf(datos.Ada, "%f", &convert[5]);
+		sscanf(datos.MaxIp, "%f", &convert[6]);
+		sscanf(datos.Dr, "%f", &convert[7]);
+		sscanf(datos.P, "%f", &convert[8]);
+		
+		//datos del fichero 2 convertidos a float para las operaciones
+		int j=0;
+		float convert2[81];
+		i=0;
+		do{
+		    
+		    sscanf(dato[i].Io, "%f", &convert2[j]);
+		    j++;
+		    sscanf(dato[i].Pa500, "%f", &convert2[j]);
+		    j++;
+		    sscanf(dato[i].Hfs, "%f", &convert2[j]);
+		    j++;
+		    sscanf(dato[i].Da, "%f", &convert2[j]);
+		    j++;
+		    sscanf(dato[i].Area, "%f", &convert2[j]);
+		    j++;
+		    sscanf(dato[i].Ada, "%f", &convert2[j]);
+		    j++;
+		    sscanf(dato[i].MaxIp, "%f", &convert2[j]);
+		    j++;
+		    sscanf(dato[i].Dr, "%f", &convert2[j]);
+		    j++;
+		    sscanf(dato[i].P, "%f", &convert2[j]);
+		    i++;
+		    j++;
+		    
+		}while(j!=81);
+        
+		//variables para las operaciones
+		float potencia=2;
+		int x=0;
+		int y =0;
+		
+		float Io[10];
+		float Pa500[10];
+		float Hfs[10];
+		float Da[10];
+		float Area[10];
+		float Ada[10];
+		float MaxIp[10];
+		float Dr[10];
+		float P[10];
+		
+		do{
+
+			Io[x] = pow(convert2[y] - convert[0],potencia);
+			y++;
+			Pa500[x] = pow(convert2[y] - convert[1],potencia);
+			y++;
+			Hfs[x] = pow(convert2[y] - convert[2],potencia);
+			y++;
+			Da[x] = pow(convert2[y] - convert[3],potencia);
+			y++;
+			Area[x] = pow(convert2[y] - convert[4],potencia);
+			y++;
+			Ada[x] = pow(convert2[y] - convert[5],potencia);
+			y++;
+			MaxIp[x] = pow(convert2[y] - convert[6],potencia);
+			y++;
+			Dr[x] = pow(convert2[y] - convert[7],potencia);
+			y++;
+			P[x] = pow(convert2[y] - convert[8],potencia);
+			y++;
+			x++;
+		
+		}while(x<9);
+        
+        //calculamos las distancias
+		float distancia[9];
+		int z;
+		for(z=0;z<9;z++){
+			distancia[z] = sqrt(Io[z]+Pa500[z]+Hfs[z]+Da[z]+Area[z]+Ada[z]+MaxIp[z]+Dr[z]+P[z]);
+		
+		}
+        
+		//creamos el fichero con las distancias
+		FILE *fc;
+		fc = fopen("pvm3/bin/LINUX/Case27.csv", "w");
+		int a;
+		for(a=0;a<9;a++){
+		    fprintf(fc, "%s,%s,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", datos.Case,datos.Class,Io[a],Pa500[a],Hfs[a],Da[a],Area[a],Ada[a],MaxIp[a],Dr[a],P[a],distancia[a]);
+		
+		}
+		fclose(fc);
+
 	}
 
 	pvm_initsend(PvmDataDefault); /* inicializar el buffer */
