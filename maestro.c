@@ -223,11 +223,13 @@ main()
 		printf("No se pudo iniciar el proceso esclavo\n");
 
 	tarea = 2;
+	int caso = 0; //si es 0 realizamos el caso 20
 	cc5 = pvm_spawn("esclavo", NULL, 1, "ubuntu-nodo1", 1, &tid);
 	if (cc5 == 1)
 	{
 		pvm_initsend(PvmDataDefault); /* inicializar el buffer */
-		pvm_send(tid, tarea); //tarea indica al esclavo si debe hacer el caso 20 o 27
+		pvm_pkint(&caso,1,0); //enviamos caso al esclavo
+		pvm_send(tid, tarea); //tarea indica al esclavo si debe normalizar o calcular las distancias
 		cc6 = pvm_recv(-1, -1); //recibe el resultado de la operación realizada en el esclavo
 		pvm_bufinfo(cc6, (int *)0, (int *)0, &tid);
 		pvm_upkint(&rsdo_c20, 1, 0);
@@ -236,11 +238,12 @@ main()
 	else
 		printf("No se pudo iniciar el proceso esclavo\n");
 
-	tarea = 3;
+	caso = 1; //realizamos caso 27
 	cc7 = pvm_spawn("esclavo", NULL, 1, "ubuntu-nodo2", 1, &tid);
 	if (cc7 == 1){
 		pvm_initsend(PvmDataDefault); /* inicializar el buffer */
-		pvm_send(tid, tarea); /* tarea indica al esclavo si debe hacer el caso 20 o 27 */
+		pvm_pkint(&caso,1,0);
+		pvm_send(tid, tarea); // tarea indica al esclavo si debe normalizar o calcular las distancias
 		cc8 = pvm_recv(-1, -1); //recibe el resultado de la operación realizada en el esclavo
 		pvm_bufinfo(cc8, (int *)0, (int *)0, &tid);
 		pvm_upkint(&rsdo_c27, 1, 0);
